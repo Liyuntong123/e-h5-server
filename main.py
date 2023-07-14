@@ -9,6 +9,7 @@ import random
 from settings import img_save_path
 from flask_socketio import SocketIO
 import openai
+import db_question
 
 from utils import stop_thread
 
@@ -18,6 +19,7 @@ app = Flask(__name__)
 CORS(app)
 socket_io = SocketIO(app, cors_allowed_origins='*')
 user_th = {}
+
 
 def sendChat(prompt, user_id):
     body = {
@@ -41,9 +43,12 @@ def sendChat(prompt, user_id):
     for res in resp:
         socket_io.emit('answer', data={'msg': res["choices"][0]["delta"].get("content", "")}, to=user_id)
 
+
 @app.route('/get_img/<string:img_name>', methods=['GET', 'POST'])
 def get_img(img_name):
     return send_file(os.path.join(img_save_path, img_name), mimetype='image/jpeg')
+
+
 @socket_io.on('questions')
 def getQ(data):
     prompt = data['prompt']
@@ -55,5 +60,17 @@ def getQ(data):
     th.start()
 
 
+# 题目
+# 创建数据库操作实例
+db = db_question.Database('localhost', 3306, 'root', '123456', 'qa')
+db.connect()
+@app.route('/question', methods=['GET', 'POST'])
+def question():
+    # 进行数据库题库查询
+    results = db.get_random_questions()
+    # print('results:', results)
+    return results
+
+
 if __name__ == '__main__':
-    socket_io.run(app, host='0.0.0.0', port=12345)
+    socket_io.run(app, host='0.0.0.0', port=12345, allow_unsafe_werkzeug=True)
