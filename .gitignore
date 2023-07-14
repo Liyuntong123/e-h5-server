@@ -9,3 +9,4 @@ node_modules/
 .idea
 __pycache__/
 processed_img/
+venv
