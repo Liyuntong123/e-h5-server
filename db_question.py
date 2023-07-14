@@ -36,8 +36,14 @@ class Database:
                 return results
         except (pymysql.OperationalError, pymysql.InterfaceError):
             # 连接异常，尝试重新连接
-            self.connect()
-            return self.execute_query(sql)
+            try:
+                self.connect()
+                with self.connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    results = cursor.fetchall()
+                    return results
+            except:
+                return []
 
     def get_random_questions(self, limit=10):
         sql = f"SELECT url, answer FROM question_bank ORDER BY RAND() LIMIT {limit}"
